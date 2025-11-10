@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Controle de Estoque</title>
+    <style>
+        body {
+            font-family: Arial;
+            margin-left: 25px;
+            display: flex;
+            justify-content: flex-start;
+            align-items: flex-start;
+        }
+
+        .conteudo {
+            width: 45%;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 3px;
+        }
+
+        th {
+            text-align: center;
+            position: sticky;
+            top: 0;
+            background: #f9f9f9;
+        }
+
+        td.valor {
+            text-align: right;
+        }
+
+        .tabela-container {
+            max-height: 215px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            width: 100%;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        input, button, datalist {
+            padding: 6px;
+        }
+
+        h1 {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="conteudo">
+        <h1>Controle de Estoque</h1>
+
+        <div class="tabela-container">
+            <table>
+                <tr>
+                    <th>Nome</th>
+                    <th>Qtd</th>
+                    <th>Custo</th>
+                    <th>Data</th>
+                </tr>
+                {% for nome, quantidade, custo, data in produtos %}
+                <tr>
+                    <td>{{ nome }}</td>
+                    <td>{{ quantidade }}</td>
+                    <td class="valor">R$ {{ '%.2f'|format(custo) }}</td>
+                    <td style="text-align:center;">{{ data }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+
+        <h3>Adicionar Produto</h3>
+        <form action="/add" method="post">
+            <label>Nome:</label>
+            <!-- auto-complete com produtos já conhecidos -->
+            <input name="nome" list="lista-produtos" required>
+            <datalist id="lista-produtos">
+                {% for nome in conhecidos %}
+                <option value="{{ nome }}">
+                {% endfor %}
+            </datalist>
+
+            <label>Quantidade:</label>
+            <input name="quantidade" type="number" required>
+
+            <label>Custo:</label>
+            <input name="custo" type="number" step="0.01" required>
+
+            <label>Data de entrada:</label>
+            <input name="data" type="date" value="{{ data_hoje }}" required>
+
+            <button type="submit">Enviar</button>
+        </form>
+    </div>
+</body>
+</html>

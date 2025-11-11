@@ -5,39 +5,44 @@
     <title>Controle de Estoque</title>
     <style>
         body {
-            font-family: Arial;
+            font-family: Arial, sans-serif;
             margin: 0;
-            padding: 10px;
+            padding: 20px;
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
             gap: 20px;
+            overflow-x: hidden;
+            box-sizing: border-box;
         }
 
         .coluna {
-            width: 45%;
+            flex: 1;
+            max-width: 48%;
+            min-width: 400px;
         }
 
-        h1 {
-            text-align: center;
+        h1, h3 {
             margin-bottom: 10px;
         }
 
         table {
             border-collapse: collapse;
             width: 100%;
+            font-size: 14px;
+            table-layout: fixed;
         }
 
         th, td {
             border: 1px solid #ccc;
-            padding: 3px;
+            padding: 6px;
+            word-wrap: break-word;
         }
 
         th {
-            text-align: center;
+            background-color: #f5f5f5;
             position: sticky;
             top: 0;
-            background: #f9f9f9;
         }
 
         td.valor {
@@ -45,103 +50,185 @@
         }
 
         .tabela-container {
-            max-height: 215px;
+            max-height: 230px;
             overflow-y: auto;
             border: 1px solid #ccc;
             width: 100%;
+            border-radius: 6px;
         }
 
         form {
             display: flex;
             flex-direction: column;
-            width: 100%;
-            gap: 5px;
+            gap: 6px;
             margin-top: 10px;
         }
 
-        input, button, select {
-            padding: 6px;
-        }
-
-        a {
-            text-decoration: none;
+        input, button {
+            padding: 8px;
             font-size: 14px;
-        }
-
-        .linha-produto {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .select-linha {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-
-        .select-linha input, .select-linha select {
             width: 100%;
+            box-sizing: border-box;
+        }
+
+        button {
+            cursor: pointer;
         }
 
         .msg {
-            background: #ffecec;
-            border: 1px solid #f5a9a9;
+            background: #f8d7da;
+            color: #721c24;
             padding: 8px;
-            margin-bottom: 10px;
             border-radius: 6px;
+            margin-bottom: 8px;
         }
 
-        .msg p {
-            margin: 0;
+        .preco-edit {
+            display: flex;
+            gap: 4px;
         }
 
         #info-custos {
-            margin-top: 10px;
-            border: 1px solid #ccc;
+            background: #f6f6f6;
             padding: 8px;
             border-radius: 6px;
-            background: #f6f6f6;
+            margin-top: 10px;
+            border: 1px solid #ccc;
         }
 
-        #info-custos p {
-            margin: 3px 0;
+        /* 🔍 Campo de filtro */
+        .busca-container {
+            position: relative;
+            margin-bottom: 8px;
+            width: 100%;
         }
 
-        #info-custos strong {
-            color: #333;
+        .busca-container input {
+            width: 100%;
+            padding: 8px 32px 8px 30px;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            font-size: 14px;
+            outline: none;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+        }
+
+        .busca-container input:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 4px rgba(0,123,255,0.3);
+        }
+
+        .busca-container .icone {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 15px;
+            color: #777;
+        }
+
+        .busca-container .limpar {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 15px;
+            color: #999;
+            cursor: pointer;
+            display: none;
+        }
+
+        .dropdown-filtro {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ccc;
+            max-height: 150px;
+            overflow-y: auto;
+            display: none;
+            z-index: 20;
+            border-radius: 0 0 10px 10px;
+        }
+
+        .dropdown-filtro div {
+            padding: 6px 10px;
+            cursor: pointer;
+        }
+
+        .dropdown-filtro div:hover {
+            background-color: #f0f0f0;
+        }
+
+        .autocomplete-container {
+            position: relative;
+            width: 100%;
+        }
+
+        .autocomplete-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ccc;
+            max-height: 120px;
+            overflow-y: auto;
+            display: none;
+            z-index: 10;
+            border-radius: 0 0 8px 8px;
+        }
+
+        .autocomplete-dropdown div {
+            padding: 5px;
+            cursor: pointer;
+        }
+
+        .autocomplete-dropdown div:hover {
+            background-color: #f0f0f0;
+        }
+
+        @media (max-width: 900px) {
+            body {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .coluna {
+                max-width: 100%;
+            }
         }
     </style>
 </head>
 <body>
-    <div style="position:absolute; top:10px; left:20px; width:90%;">
-        {% with messages = get_flashed_messages() %}
-          {% if messages %}
-            <div class="msg">
-              {% for msg in messages %}
-                <p>{{ msg }}</p>
-              {% endfor %}
-            </div>
-          {% endif %}
-        {% endwith %}
-    </div>
-
-    <!-- Coluna esquerda: insumos -->
+    <!-- 🧱 Coluna esquerda: Estoque -->
     <div class="coluna">
         <h1>Estoque de Insumos</h1>
 
+        <div class="busca-container">
+            <span class="icone">🔍</span>
+            <input type="text" id="filtro-insumo" placeholder="Filtrar por insumo..." autocomplete="off">
+            <span class="limpar" id="limpar-insumo">✖</span>
+            <div class="dropdown-filtro" id="dropdown-filtro-insumo"></div>
+        </div>
+
         <div class="tabela-container">
-            <table>
+            <table id="tabela-insumos">
                 <tr>
                     <th>Nome</th>
                     <th>Qtd</th>
-                    <th>Custo</th>
+                    <th>C.Unit</th>
+                    <th>C.Total</th>
                     <th>Data</th>
                 </tr>
-                {% for nome, quantidade, custo, data in produtos %}
+                {% for nome, quantidade, custo_unit, custo_total, data in produtos %}
                 <tr>
                     <td>{{ nome }}</td>
                     <td>{{ quantidade }}</td>
-                    <td class="valor">R$ {{ '%.2f'|format(custo) }}</td>
+                    <td class="valor">R$ {{ '%.4f'|format(custo_unit) }}</td>
+                    <td class="valor">R$ {{ '%.2f'|format(custo_total) }}</td>
                     <td style="text-align:center;">{{ data }}</td>
                 </tr>
                 {% endfor %}
@@ -150,13 +237,10 @@
 
         <h3>Adicionar Insumo</h3>
         <form action="/add" method="post">
-            <div class="linha-produto">
-                <label>Nome do insumo:</label>
-                <div class="select-linha">
-                    <input type="text" id="busca-insumo" placeholder="Digite ou selecione o insumo" autocomplete="off" required>
-                    <select id="selecao-insumo" name="nome_existente" size="5" style="display:none;"></select>
-                    <input type="hidden" name="nome" id="nome-insumo">
-                </div>
+            <label>Nome:</label>
+            <div class="autocomplete-container">
+                <input id="insumo-nome" name="nome" autocomplete="off" required>
+                <div id="dropdown-insumo-nome" class="autocomplete-dropdown"></div>
             </div>
 
             <label>Quantidade:</label>
@@ -167,31 +251,59 @@
 
             <label>
                 <input type="checkbox" name="eh_total" checked>
-                Valor informado é <strong>custo total da compra</strong>
+                Valor informado é <strong>custo total</strong>
             </label>
 
-            <label>Data de entrada:</label>
+            <label>Data:</label>
             <input name="data" type="date" value="{{ data_hoje }}" required>
 
             <button type="submit">Adicionar</button>
         </form>
     </div>
 
-    <!-- Coluna direita: produtos acabados -->
+    <!-- 🏭 Coluna direita: Produção -->
     <div class="coluna">
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            <div class="msg">
+              {% for msg in messages %}
+                <p>{{ msg }}</p>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
         <h1>Produção de Acabados</h1>
 
+        <div class="busca-container">
+            <span class="icone">🔍</span>
+            <input type="text" id="filtro-acabado" placeholder="Filtrar por produto..." autocomplete="off">
+            <span class="limpar" id="limpar-acabado">✖</span>
+            <div class="dropdown-filtro" id="dropdown-filtro-acabado"></div>
+        </div>
+
         <div class="tabela-container">
-            <table>
+            <table id="tabela-acabados">
                 <tr>
                     <th>Produto</th>
                     <th>Qtd</th>
+                    <th>C.Unit</th>
+                    <th>C.Total</th>
+                    <th>Venda</th>
                     <th>Data</th>
                 </tr>
-                {% for nome, quantidade, data in acabados %}
+                {% for id, nome, qtd, cunit, ctotal, pvenda, data in acabados %}
                 <tr>
                     <td>{{ nome }}</td>
-                    <td>{{ quantidade }}</td>
+                    <td>{{ qtd }}</td>
+                    <td class="valor">R$ {{ '%.4f'|format(cunit) }}</td>
+                    <td class="valor">R$ {{ '%.2f'|format(ctotal) }}</td>
+                    <td>
+                        <form action="/editar_venda/{{ id }}" method="post" class="preco-edit">
+                            <input type="number" name="preco_venda" step="0.01" value="{{ '%.2f'|format(pvenda) }}" required>
+                            <button>💾</button>
+                        </form>
+                    </td>
                     <td style="text-align:center;">{{ data }}</td>
                 </tr>
                 {% endfor %}
@@ -200,144 +312,170 @@
 
         <h3>Registrar Produção</h3>
         <form action="/produzir" method="post">
-            <div class="linha-produto">
-                <label>Produto acabado:</label>
-                <div class="select-linha">
-                    <input type="text" id="busca-produto" placeholder="Digite o nome do produto" autocomplete="off" required>
-                    <select id="selecao-produto" name="produto_existente" size="5" style="display:none;"></select>
-                    <input type="hidden" name="produto" id="produto">
-                </div>
+            <label>Produto:</label>
+            <div class="autocomplete-container">
+                <input id="produto-acabado" type="text" name="produto" autocomplete="off" required>
+                <div id="dropdown-produto" class="autocomplete-dropdown"></div>
             </div>
 
-            <label>Quantidade Produzida:</label>
-            <input type="number" id="quantidade-producao" name="quantidade" min="1" required>
+            <label>Quantidade:</label>
+            <input id="qtd-prod" name="quantidade" type="number" step="0.01" required>
 
-            <!-- PAINEL DE CUSTOS SEMPRE VISÍVEL -->
             <div id="info-custos">
-                <p><strong>Custo unitário:</strong> R$ <span id="custo-unit">0,00</span></p>
-                <p><strong>Custo total:</strong> R$ <span id="custo-total">0,00</span></p>
-                <p><strong>Preço sugerido (30% margem):</strong> R$ <span id="preco-sugerido">0,00</span></p>
+                <p><strong>C.Unit:</strong> R$ <span id="c-unit">0.00</span></p>
+                <p><strong>C.Total:</strong> R$ <span id="c-total">0.00</span></p>
+                <p><strong>Preço sugerido:</strong> R$ <span id="p-sugerido">0.00</span></p>
             </div>
 
-            <button type="submit">Registrar Produção</button>
+            <label>Preço de venda:</label>
+            <input id="pvenda" name="preco_venda" type="number" step="0.01" required>
+
+            <button type="submit">Registrar</button>
         </form>
 
-        <p style="text-align:center; margin-top:10px;">
-            <a href="/receitas">⚙️ Configurar Receitas</a>
-        </p>
+        <div style="text-align:center; margin-top:12px;">
+            <a href="/receitas"
+               style="background:#007bff; color:white; padding:8px 14px; border-radius:6px; text-decoration:none;">
+               ⚙️ Configurar Receitas
+            </a>
+        </div>
     </div>
 
     <script>
-        // -------- INSUMOS (Autocomplete) ----------
-        const insumosConhecidos = {{ conhecidos|tojson }};
-        const inputInsumo = document.getElementById('busca-insumo');
-        const selectInsumo = document.getElementById('selecao-insumo');
-        const hiddenInsumo = document.getElementById('nome-insumo');
+        const conhecidos = {{ conhecidos|tojson }};
+        const receitas_conhecidas = {{ receitas_conhecidas|tojson }};
 
-        function mostrarListaInsumos(filtro = "") {
-            const termo = filtro.toLowerCase();
-            const filtrados = insumosConhecidos.filter(p => p.toLowerCase().startsWith(termo));
+        // Autocomplete padrão
+        function setupDropdown(inputId, dropdownId, lista) {
+            const input = document.getElementById(inputId);
+            const dropdown = document.getElementById(dropdownId);
 
-            selectInsumo.innerHTML = '';
-            filtrados.forEach(nome => {
-                const opt = document.createElement('option');
-                opt.value = nome;
-                opt.textContent = nome;
-                selectInsumo.appendChild(opt);
+            function atualizarDropdown(filtro = "") {
+                const termo = filtro.toLowerCase();
+                const filtrados = lista.filter(item => item.toLowerCase().startsWith(termo));
+
+                dropdown.innerHTML = "";
+                filtrados.forEach(item => {
+                    const div = document.createElement("div");
+                    div.textContent = item;
+                    div.onclick = () => {
+                        input.value = item;
+                        dropdown.style.display = "none";
+                    };
+                    dropdown.appendChild(div);
+                });
+
+                dropdown.style.display = filtrados.length > 0 ? "block" : "none";
+            }
+
+            input.addEventListener("focus", () => atualizarDropdown(""));
+            input.addEventListener("input", () => atualizarDropdown(input.value));
+
+            document.addEventListener("click", (e) => {
+                if (!e.target.closest(`#${dropdownId}`) && e.target !== input) {
+                    dropdown.style.display = "none";
+                }
             });
-
-            selectInsumo.style.display = filtrados.length > 0 ? 'block' : 'none';
         }
 
-        inputInsumo.addEventListener('focus', () => mostrarListaInsumos(""));
-        inputInsumo.addEventListener('input', () => {
-            mostrarListaInsumos(inputInsumo.value);
-            hiddenInsumo.value = inputInsumo.value;
-        });
-        selectInsumo.addEventListener('change', () => {
-            inputInsumo.value = selectInsumo.value;
-            hiddenInsumo.value = selectInsumo.value;
-            selectInsumo.style.display = 'none';
-        });
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.select-linha')) selectInsumo.style.display = 'none';
-        });
+        setupDropdown("insumo-nome", "dropdown-insumo-nome", conhecidos);
+        setupDropdown("produto-acabado", "dropdown-produto", receitas_conhecidas);
 
-        // -------- PRODUTOS (Autocomplete + Custo) ----------
-        const produtosConhecidos = {{ receitas_conhecidas|tojson }};
-        const inputBusca = document.getElementById('busca-produto');
-        const select = document.getElementById('selecao-produto');
-        const hiddenProduto = document.getElementById('produto');
-        const campoQuantidade = document.getElementById('quantidade-producao');
-        const infoCustos = document.getElementById('info-custos');
-        const custoUnit = document.getElementById('custo-unit');
-        const custoTotal = document.getElementById('custo-total');
-        const precoSugerido = document.getElementById('preco-sugerido');
+        // Filtros com sugestões
+        function setupFiltro(filtroId, limparId, dropdownId, tabelaId, listaColuna) {
+            const input = document.getElementById(filtroId);
+            const limpar = document.getElementById(limparId);
+            const dropdown = document.getElementById(dropdownId);
+            const tabela = document.getElementById(tabelaId);
 
-        function mostrarListaProdutos(filtro = "") {
-            const termo = filtro.toLowerCase();
-            const filtrados = produtosConhecidos.filter(p => p.toLowerCase().startsWith(termo));
+            function aplicarFiltro(valor) {
+                const termo = valor.toLowerCase();
+                const linhas = tabela.getElementsByTagName("tr");
+                for (let i = 1; i < linhas.length; i++) {
+                    const celula = linhas[i].getElementsByTagName("td")[0];
+                    if (celula) {
+                        const texto = celula.textContent.toLowerCase();
+                        linhas[i].style.display = texto.includes(termo) ? "" : "none";
+                    }
+                }
+                limpar.style.display = valor ? "block" : "none";
+            }
 
-            select.innerHTML = '';
-            filtrados.forEach(nome => {
-                const opt = document.createElement('option');
-                opt.value = nome;
-                opt.textContent = nome;
-                select.appendChild(opt);
+            input.addEventListener("input", () => {
+                const termo = input.value.toLowerCase();
+                aplicarFiltro(termo);
+
+                const filtrados = listaColuna.filter(p => p.toLowerCase().startsWith(termo));
+                dropdown.innerHTML = "";
+                filtrados.forEach(p => {
+                    const div = document.createElement("div");
+                    div.textContent = p;
+                    div.onclick = () => {
+                        input.value = p;
+                        aplicarFiltro(p);
+                        dropdown.style.display = "none";
+                    };
+                    dropdown.appendChild(div);
+                });
+                dropdown.style.display = filtrados.length > 0 ? "block" : "none";
             });
 
-            select.style.display = filtrados.length > 0 ? 'block' : 'none';
+            input.addEventListener("focus", () => {
+                dropdown.innerHTML = "";
+                listaColuna.forEach(p => {
+                    const div = document.createElement("div");
+                    div.textContent = p;
+                    div.onclick = () => {
+                        input.value = p;
+                        aplicarFiltro(p);
+                        dropdown.style.display = "none";
+                    };
+                    dropdown.appendChild(div);
+                });
+                dropdown.style.display = "block";
+            });
+
+            limpar.addEventListener("click", () => {
+                input.value = "";
+                aplicarFiltro("");
+                dropdown.style.display = "none";
+            });
+
+            document.addEventListener("click", (e) => {
+                if (!e.target.closest(".busca-container")) {
+                    dropdown.style.display = "none";
+                }
+            });
         }
 
-        inputBusca.addEventListener('focus', () => mostrarListaProdutos(""));
-        inputBusca.addEventListener('input', () => {
-            mostrarListaProdutos(inputBusca.value);
-            hiddenProduto.value = inputBusca.value;
-            atualizarCustos();
-        });
-        select.addEventListener('change', () => {
-            inputBusca.value = select.value;
-            hiddenProduto.value = select.value;
-            select.style.display = 'none';
-            atualizarCustos();
-        });
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.select-linha')) select.style.display = 'none';
-        });
+        setupFiltro("filtro-insumo", "limpar-insumo", "dropdown-filtro-insumo", "tabela-insumos", conhecidos);
+        setupFiltro("filtro-acabado", "limpar-acabado", "dropdown-filtro-acabado", "tabela-acabados", receitas_conhecidas);
+
+        // Atualização dos custos
+        const inputProduto = document.getElementById('produto-acabado');
+        const inputQtd = document.getElementById('qtd-prod');
+        const campoCUnit = document.getElementById('c-unit');
+        const campoCTotal = document.getElementById('c-total');
+        const campoPSug = document.getElementById('p-sugerido');
+        const campoPVenda = document.getElementById('pvenda');
 
         async function atualizarCustos() {
-            const produto = hiddenProduto.value.trim();
-            const quantidade = parseFloat(campoQuantidade.value);
+            const produto = inputProduto.value;
+            const qtd = inputQtd.value;
+            if (!produto || !qtd || qtd <= 0) return;
 
-            console.log("🔎 Atualizando custo para:", produto, quantidade);
+            const resp = await fetch(`/custo/${encodeURIComponent(produto)}/${encodeURIComponent(qtd)}`);
+            if (!resp.ok) return;
+            const dados = await resp.json();
 
-            infoCustos.style.display = 'block';
-
-            if (!produto || !quantidade || quantidade <= 0) {
-                custoUnit.textContent = "0,00";
-                custoTotal.textContent = "0,00";
-                precoSugerido.textContent = "0,00";
-                return;
-            }
-
-            try {
-                const resposta = await fetch(`/custo/${encodeURIComponent(produto)}/${encodeURIComponent(quantidade)}`);
-                if (!resposta.ok) throw new Error('Erro ao calcular custo');
-                const dados = await resposta.json();
-                console.log("✅ Resposta recebida:", dados);
-
-                custoUnit.textContent = dados.unitario.toFixed(2);
-                custoTotal.textContent = dados.total.toFixed(2);
-                precoSugerido.textContent = dados.sugerido.toFixed(2);
-            } catch (err) {
-                custoUnit.textContent = "0,00";
-                custoTotal.textContent = "0,00";
-                precoSugerido.textContent = "0,00";
-                console.error(err);
-            }
+            campoCUnit.textContent = dados.unitario.toFixed(4);
+            campoCTotal.textContent = dados.total.toFixed(2);
+            campoPSug.textContent = dados.sugerido.toFixed(2);
+            campoPVenda.value = dados.sugerido.toFixed(2);
         }
 
-        campoQuantidade.addEventListener('input', atualizarCustos);
+        inputProduto.addEventListener('input', atualizarCustos);
+        inputQtd.addEventListener('input', atualizarCustos);
     </script>
 </body>
 </html>

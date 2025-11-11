@@ -6,20 +6,20 @@
     <style>
         body {
             font-family: Arial;
-            margin-top: 0;
-            margin-left: 25px;
+            margin: 0;
+            padding: 10px;
             display: flex;
-            justify-content: flex-start;
+            justify-content: space-between;
             align-items: flex-start;
+            gap: 20px;
         }
 
-        .conteudo {
+        .coluna {
             width: 45%;
-            text-align: left; /* tudo fica alinhado à esquerda */
         }
 
         h1 {
-            text-align: center; /* apenas o título centralizado */
+            text-align: center;
             margin-bottom: 10px;
         }
 
@@ -56,11 +56,16 @@
             flex-direction: column;
             width: 100%;
             gap: 5px;
-            margin-top: 20px;
+            margin-top: 10px;
         }
 
         input, button, select {
             padding: 6px;
+        }
+
+        a {
+            text-decoration: none;
+            font-size: 14px;
         }
 
         .linha-produto {
@@ -68,38 +73,72 @@
             flex-direction: column;
         }
 
-        .linha-produto label {
-            margin-bottom: 4px;
-        }
-
         .select-linha {
             display: flex;
             flex-direction: column;
             gap: 5px;
-            max-width: 654px;
         }
 
         .select-linha input, .select-linha select {
             width: 100%;
         }
+
+        .msg {
+            background: #ffecec;
+            border: 1px solid #f5a9a9;
+            padding: 8px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+        }
+
+        .msg p {
+            margin: 0;
+        }
+
+        #info-custos {
+            margin-top: 10px;
+            border: 1px solid #ccc;
+            padding: 8px;
+            border-radius: 6px;
+            background: #f6f6f6;
+        }
+
+        #info-custos p {
+            margin: 3px 0;
+        }
+
+        #info-custos strong {
+            color: #333;
+        }
     </style>
 </head>
 <body>
-    <div class="conteudo">
-        <h1>Controle de Estoque</h1>
+    <div style="position:absolute; top:10px; left:20px; width:90%;">
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            <div class="msg">
+              {% for msg in messages %}
+                <p>{{ msg }}</p>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- Coluna esquerda: insumos -->
+    <div class="coluna">
+        <h1>Estoque de Insumos</h1>
 
         <div class="tabela-container">
             <table>
                 <tr>
-                    <th>Id</th>
                     <th>Nome</th>
                     <th>Qtd</th>
                     <th>Custo</th>
                     <th>Data</th>
                 </tr>
-                {% for id, nome, quantidade, custo, data in produtos %}
+                {% for nome, quantidade, custo, data in produtos %}
                 <tr>
-                    <td style="text-align:center;">{{ id }}</td>
                     <td>{{ nome }}</td>
                     <td>{{ quantidade }}</td>
                     <td class="valor">R$ {{ '%.2f'|format(custo) }}</td>
@@ -109,69 +148,196 @@
             </table>
         </div>
 
-        <h3>Adicionar Produto</h3>
+        <h3>Adicionar Insumo</h3>
         <form action="/add" method="post">
             <div class="linha-produto">
-                <label>Nome:</label>
+                <label>Nome do insumo:</label>
                 <div class="select-linha">
-                    <input type="text" id="busca" placeholder="Digite o nome do produto" autocomplete="off" required>
-                    <select id="selecao" name="nome_existente" size="5" style="display:none;"></select>
-                    <input type="hidden" name="nome" id="nome">
+                    <input type="text" id="busca-insumo" placeholder="Digite ou selecione o insumo" autocomplete="off" required>
+                    <select id="selecao-insumo" name="nome_existente" size="5" style="display:none;"></select>
+                    <input type="hidden" name="nome" id="nome-insumo">
                 </div>
             </div>
 
             <label>Quantidade:</label>
-            <input name="quantidade" type="number" required>
+            <input name="quantidade" type="number" step="0.01" required>
 
-            <label>Custo:</label>
+            <label>Valor informado:</label>
             <input name="custo" type="number" step="0.01" required>
+
+            <label>
+                <input type="checkbox" name="eh_total" checked>
+                Valor informado é <strong>custo total da compra</strong>
+            </label>
 
             <label>Data de entrada:</label>
             <input name="data" type="date" value="{{ data_hoje }}" required>
 
-            <button type="submit">Enviar</button>
+            <button type="submit">Adicionar</button>
         </form>
     </div>
 
+    <!-- Coluna direita: produtos acabados -->
+    <div class="coluna">
+        <h1>Produção de Acabados</h1>
+
+        <div class="tabela-container">
+            <table>
+                <tr>
+                    <th>Produto</th>
+                    <th>Qtd</th>
+                    <th>Data</th>
+                </tr>
+                {% for nome, quantidade, data in acabados %}
+                <tr>
+                    <td>{{ nome }}</td>
+                    <td>{{ quantidade }}</td>
+                    <td style="text-align:center;">{{ data }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+
+        <h3>Registrar Produção</h3>
+        <form action="/produzir" method="post">
+            <div class="linha-produto">
+                <label>Produto acabado:</label>
+                <div class="select-linha">
+                    <input type="text" id="busca-produto" placeholder="Digite o nome do produto" autocomplete="off" required>
+                    <select id="selecao-produto" name="produto_existente" size="5" style="display:none;"></select>
+                    <input type="hidden" name="produto" id="produto">
+                </div>
+            </div>
+
+            <label>Quantidade Produzida:</label>
+            <input type="number" id="quantidade-producao" name="quantidade" min="1" required>
+
+            <!-- PAINEL DE CUSTOS SEMPRE VISÍVEL -->
+            <div id="info-custos">
+                <p><strong>Custo unitário:</strong> R$ <span id="custo-unit">0,00</span></p>
+                <p><strong>Custo total:</strong> R$ <span id="custo-total">0,00</span></p>
+                <p><strong>Preço sugerido (30% margem):</strong> R$ <span id="preco-sugerido">0,00</span></p>
+            </div>
+
+            <button type="submit">Registrar Produção</button>
+        </form>
+
+        <p style="text-align:center; margin-top:10px;">
+            <a href="/receitas">⚙️ Configurar Receitas</a>
+        </p>
+    </div>
+
     <script>
-        // produtos conhecidos vindos do Flask
-        const produtosConhecidos = {{ conhecidos|tojson }};
+        // -------- INSUMOS (Autocomplete) ----------
+        const insumosConhecidos = {{ conhecidos|tojson }};
+        const inputInsumo = document.getElementById('busca-insumo');
+        const selectInsumo = document.getElementById('selecao-insumo');
+        const hiddenInsumo = document.getElementById('nome-insumo');
 
-        const inputBusca = document.getElementById('busca');
-        const select = document.getElementById('selecao');
-        const hiddenNome = document.getElementById('nome');
+        function mostrarListaInsumos(filtro = "") {
+            const termo = filtro.toLowerCase();
+            const filtrados = insumosConhecidos.filter(p => p.toLowerCase().startsWith(termo));
 
-        inputBusca.addEventListener('input', () => {
-            const termo = inputBusca.value.toLowerCase();
+            selectInsumo.innerHTML = '';
+            filtrados.forEach(nome => {
+                const opt = document.createElement('option');
+                opt.value = nome;
+                opt.textContent = nome;
+                selectInsumo.appendChild(opt);
+            });
+
+            selectInsumo.style.display = filtrados.length > 0 ? 'block' : 'none';
+        }
+
+        inputInsumo.addEventListener('focus', () => mostrarListaInsumos(""));
+        inputInsumo.addEventListener('input', () => {
+            mostrarListaInsumos(inputInsumo.value);
+            hiddenInsumo.value = inputInsumo.value;
+        });
+        selectInsumo.addEventListener('change', () => {
+            inputInsumo.value = selectInsumo.value;
+            hiddenInsumo.value = selectInsumo.value;
+            selectInsumo.style.display = 'none';
+        });
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.select-linha')) selectInsumo.style.display = 'none';
+        });
+
+        // -------- PRODUTOS (Autocomplete + Custo) ----------
+        const produtosConhecidos = {{ receitas_conhecidas|tojson }};
+        const inputBusca = document.getElementById('busca-produto');
+        const select = document.getElementById('selecao-produto');
+        const hiddenProduto = document.getElementById('produto');
+        const campoQuantidade = document.getElementById('quantidade-producao');
+        const infoCustos = document.getElementById('info-custos');
+        const custoUnit = document.getElementById('custo-unit');
+        const custoTotal = document.getElementById('custo-total');
+        const precoSugerido = document.getElementById('preco-sugerido');
+
+        function mostrarListaProdutos(filtro = "") {
+            const termo = filtro.toLowerCase();
             const filtrados = produtosConhecidos.filter(p => p.toLowerCase().startsWith(termo));
 
             select.innerHTML = '';
-            if (filtrados.length > 0 && termo.length > 0) {
-                filtrados.forEach(nome => {
-                    const opt = document.createElement('option');
-                    opt.value = nome;
-                    opt.textContent = nome;
-                    select.appendChild(opt);
-                });
-                select.style.display = 'block';
-            } else {
-                select.style.display = 'none';
-            }
+            filtrados.forEach(nome => {
+                const opt = document.createElement('option');
+                opt.value = nome;
+                opt.textContent = nome;
+                select.appendChild(opt);
+            });
 
-            hiddenNome.value = inputBusca.value;
+            select.style.display = filtrados.length > 0 ? 'block' : 'none';
+        }
+
+        inputBusca.addEventListener('focus', () => mostrarListaProdutos(""));
+        inputBusca.addEventListener('input', () => {
+            mostrarListaProdutos(inputBusca.value);
+            hiddenProduto.value = inputBusca.value;
+            atualizarCustos();
         });
-
         select.addEventListener('change', () => {
             inputBusca.value = select.value;
-            hiddenNome.value = select.value;
+            hiddenProduto.value = select.value;
             select.style.display = 'none';
+            atualizarCustos();
+        });
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.select-linha')) select.style.display = 'none';
         });
 
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.select-linha')) {
-                select.style.display = 'none';
+        async function atualizarCustos() {
+            const produto = hiddenProduto.value.trim();
+            const quantidade = parseFloat(campoQuantidade.value);
+
+            console.log("🔎 Atualizando custo para:", produto, quantidade);
+
+            infoCustos.style.display = 'block';
+
+            if (!produto || !quantidade || quantidade <= 0) {
+                custoUnit.textContent = "0,00";
+                custoTotal.textContent = "0,00";
+                precoSugerido.textContent = "0,00";
+                return;
             }
-        });
+
+            try {
+                const resposta = await fetch(`/custo/${encodeURIComponent(produto)}/${encodeURIComponent(quantidade)}`);
+                if (!resposta.ok) throw new Error('Erro ao calcular custo');
+                const dados = await resposta.json();
+                console.log("✅ Resposta recebida:", dados);
+
+                custoUnit.textContent = dados.unitario.toFixed(2);
+                custoTotal.textContent = dados.total.toFixed(2);
+                precoSugerido.textContent = dados.sugerido.toFixed(2);
+            } catch (err) {
+                custoUnit.textContent = "0,00";
+                custoTotal.textContent = "0,00";
+                precoSugerido.textContent = "0,00";
+                console.error(err);
+            }
+        }
+
+        campoQuantidade.addEventListener('input', atualizarCustos);
     </script>
 </body>
 </html>

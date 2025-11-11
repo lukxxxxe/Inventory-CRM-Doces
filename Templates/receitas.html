@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Receitas</title>
+    <style>
+        body {
+            font-family: Arial;
+            margin: 20px;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 70%;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 6px;
+        }
+
+        th {
+            text-align: center;
+            background: #f9f9f9;
+        }
+
+        td.valor {
+            text-align: right;
+        }
+
+        td.acoes {
+            text-align: center;
+        }
+
+        form {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 50%;
+        }
+
+        input, select, button {
+            padding: 5px;
+        }
+
+        .linha-produto {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .select-linha {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .select-linha input, .select-linha select {
+            width: 100%;
+        }
+
+        a {
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .filtro {
+            margin-bottom: 15px;
+        }
+
+        button.excluir {
+            background: #f88;
+            border: 1px solid #d33;
+            cursor: pointer;
+            padding: 3px 8px;
+        }
+
+        button.excluir:hover {
+            background: #f55;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>Receitas de Produtos</h1>
+
+    <!-- FILTRO -->
+    <div class="filtro" style="text-align:left; margin-bottom:15px;">
+        <form action="/receitas" method="get" style="display:inline-flex; align-items:center; gap:10px;">
+            <label>Filtrar por produto:</label>
+            <select name="produto" onchange="this.form.submit()">
+                <option value="">(mostrar todos)</option>
+                {% for p in produtos %}
+                    <option value="{{ p }}" {% if p == produto_filtro %}selected{% endif %}>{{ p }}</option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+
+
+    <!-- TABELA DE RECEITAS -->
+    <table>
+        <tr>
+            <th>Produto</th>
+            <th>Insumo</th>
+            <th>Quantidade</th>
+            <th>Ações</th>
+        </tr>
+        {% for produto, insumo, qtd, id in receitas %}
+        <tr>
+            <td>{{ produto }}</td>
+            <td>{{ insumo }}</td>
+            <td class="valor">{{ qtd }}</td>
+            <td class="acoes">
+                <form action="/delete_receita/{{ id }}" method="get" onsubmit="return confirm('Remover esta linha?');">
+                    <button class="excluir" type="submit">Excluir</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <!-- FORMULÁRIO DE NOVA RECEITA -->
+    <h3>Adicionar nova receita</h3>
+    <form action="/add_receita" method="post">
+        <div class="linha-produto">
+            <label>Produto acabado:</label>
+            <div class="select-linha">
+                <input type="text" id="busca-produto" placeholder="Digite o produto" autocomplete="off" required>
+                <select id="selecao-produto" name="produto_existente" size="5" style="display:none;"></select>
+                <input type="hidden" name="produto" id="produto">
+            </div>
+        </div>
+
+        <label>Insumo utilizado:</label>
+        <select name="insumo" required>
+            {% for i in insumos %}
+            <option value="{{ i }}">{{ i }}</option>
+            {% endfor %}
+        </select>
+
+        <label>Quantidade usada:</label>
+        <input type="number" step="0.01" name="quantidade" required>
+
+        <button type="submit">Adicionar</button>
+    </form>
+
+    <p><a href="/">← Voltar ao estoque</a></p>
+
+    <script>
+        // Produtos acabados conhecidos vindos do Flask
+        const produtosConhecidos = {{ produtos|tojson }};
+
+        const inputBusca = document.getElementById('busca-produto');
+        const select = document.getElementById('selecao-produto');
+        const hiddenProduto = document.getElementById('produto');
+
+        function mostrarLista(filtro = "") {
+            const termo = filtro.toLowerCase();
+            const filtrados = produtosConhecidos.filter(p => p.toLowerCase().startsWith(termo));
+
+            select.innerHTML = '';
+            filtrados.forEach(nome => {
+                const opt = document.createElement('option');
+                opt.value = nome;
+                opt.textContent = nome;
+                select.appendChild(opt);
+            });
+
+            if (filtrados.length > 0) {
+                select.style.display = 'block';
+            } else {
+                select.style.display = 'none';
+            }
+        }
+
+        // Mostra a lista completa ao focar
+        inputBusca.addEventListener('focus', () => {
+            mostrarLista("");
+        });
+
+        // Filtra conforme digita
+        inputBusca.addEventListener('input', () => {
+            mostrarLista(inputBusca.value);
+            hiddenProduto.value = inputBusca.value;
+        });
+
+        // Seleciona item
+        select.addEventListener('change', () => {
+            inputBusca.value = select.value;
+            hiddenProduto.value = select.value;
+            select.style.display = 'none';
+        });
+
+        // Fecha ao clicar fora
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.select-linha')) {
+                select.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

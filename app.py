@@ -56,7 +56,7 @@ def inserir_produto_estoque(nome, quantidade, custo_unit, data_entrada):
 def consultar_estoque():
     conn = sqlite3.connect('estoque.db')
     cursor = conn.cursor()
-    cursor.execute('SELECT nome, quantidade, custo_unit, data_entrada FROM estoque ORDER BY date(data_entrada) ASC')
+    cursor.execute('SELECT id, nome, quantidade, custo_unit, data_entrada FROM estoque ORDER BY date(data_entrada) ASC')
     dados = cursor.fetchall()
     conn.close()
     return dados
@@ -82,7 +82,7 @@ def index():
 
 @app.route('/add', methods=['POST'])
 def add():
-    nome = request.form['nome']
+    nome = request.form['nome'] or request.form['nome_existente']
     quantidade = int(request.form['quantidade'])
     custo = float(request.form['custo'])
     data_entrada = request.form['data']

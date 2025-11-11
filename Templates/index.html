@@ -6,6 +6,7 @@
     <style>
         body {
             font-family: Arial;
+            margin-top: 0;
             margin-left: 25px;
             display: flex;
             justify-content: flex-start;
@@ -14,6 +15,12 @@
 
         .conteudo {
             width: 45%;
+            text-align: left; /* tudo fica alinhado à esquerda */
+        }
+
+        h1 {
+            text-align: center; /* apenas o título centralizado */
+            margin-bottom: 10px;
         }
 
         table {
@@ -48,16 +55,32 @@
             display: flex;
             flex-direction: column;
             width: 100%;
-            gap: 10px;
+            gap: 5px;
             margin-top: 20px;
         }
 
-        input, button, datalist {
+        input, button, select {
             padding: 6px;
         }
 
-        h1 {
-            margin-bottom: 10px;
+        .linha-produto {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .linha-produto label {
+            margin-bottom: 4px;
+        }
+
+        .select-linha {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            max-width: 654px;
+        }
+
+        .select-linha input, .select-linha select {
+            width: 100%;
         }
     </style>
 </head>
@@ -68,13 +91,15 @@
         <div class="tabela-container">
             <table>
                 <tr>
+                    <th>Id</th>
                     <th>Nome</th>
                     <th>Qtd</th>
                     <th>Custo</th>
                     <th>Data</th>
                 </tr>
-                {% for nome, quantidade, custo, data in produtos %}
+                {% for id, nome, quantidade, custo, data in produtos %}
                 <tr>
+                    <td style="text-align:center;">{{ id }}</td>
                     <td>{{ nome }}</td>
                     <td>{{ quantidade }}</td>
                     <td class="valor">R$ {{ '%.2f'|format(custo) }}</td>
@@ -86,14 +111,14 @@
 
         <h3>Adicionar Produto</h3>
         <form action="/add" method="post">
-            <label>Nome:</label>
-            <!-- auto-complete com produtos já conhecidos -->
-            <input name="nome" list="lista-produtos" required>
-            <datalist id="lista-produtos">
-                {% for nome in conhecidos %}
-                <option value="{{ nome }}">
-                {% endfor %}
-            </datalist>
+            <div class="linha-produto">
+                <label>Nome:</label>
+                <div class="select-linha">
+                    <input type="text" id="busca" placeholder="Digite o nome do produto" autocomplete="off" required>
+                    <select id="selecao" name="nome_existente" size="5" style="display:none;"></select>
+                    <input type="hidden" name="nome" id="nome">
+                </div>
+            </div>
 
             <label>Quantidade:</label>
             <input name="quantidade" type="number" required>
@@ -107,5 +132,46 @@
             <button type="submit">Enviar</button>
         </form>
     </div>
+
+    <script>
+        // produtos conhecidos vindos do Flask
+        const produtosConhecidos = {{ conhecidos|tojson }};
+
+        const inputBusca = document.getElementById('busca');
+        const select = document.getElementById('selecao');
+        const hiddenNome = document.getElementById('nome');
+
+        inputBusca.addEventListener('input', () => {
+            const termo = inputBusca.value.toLowerCase();
+            const filtrados = produtosConhecidos.filter(p => p.toLowerCase().startsWith(termo));
+
+            select.innerHTML = '';
+            if (filtrados.length > 0 && termo.length > 0) {
+                filtrados.forEach(nome => {
+                    const opt = document.createElement('option');
+                    opt.value = nome;
+                    opt.textContent = nome;
+                    select.appendChild(opt);
+                });
+                select.style.display = 'block';
+            } else {
+                select.style.display = 'none';
+            }
+
+            hiddenNome.value = inputBusca.value;
+        });
+
+        select.addEventListener('change', () => {
+            inputBusca.value = select.value;
+            hiddenNome.value = select.value;
+            select.style.display = 'none';
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.select-linha')) {
+                select.style.display = 'none';
+            }
+        });
+    </script>
 </body>
 </html>

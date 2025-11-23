@@ -299,7 +299,7 @@
                     <td class="valor">R$ {{ '%.4f'|format(cunit) }}</td>
                     <td class="valor">R$ {{ '%.2f'|format(ctotal) }}</td>
                     <td>
-                        <form action="/editar_venda/{{ id }}" method="post" class="preco-edit">
+                        <form action="/editar_venda/{{ id }}" method="post" class="preco-edit" style="display:flex;flex-direction: row">
                             <input type="number" name="preco_venda" step="0.01" value="{{ '%.2f'|format(pvenda) }}" required>
                             <button>💾</button>
                         </form>

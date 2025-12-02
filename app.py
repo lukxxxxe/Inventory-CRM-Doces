@@ -121,11 +121,11 @@ def consultar_estoque(filtro_nome=None):
     cursor = conn.cursor()
     if filtro_nome:
         cursor.execute('''
-            SELECT nome, quantidade, custo_unit, custo_total, data_entrada
+            SELECT id, nome, quantidade, custo_unit, custo_total, data_entrada
             FROM estoque WHERE nome LIKE ? ORDER BY date(data_entrada) ASC
         ''', (f'%{filtro_nome}%',))
     else:
-        cursor.execute('SELECT nome, quantidade, custo_unit, custo_total, data_entrada FROM estoque ORDER BY date(data_entrada) ASC')
+        cursor.execute('SELECT id, nome, quantidade, custo_unit, custo_total, data_entrada FROM estoque ORDER BY date(data_entrada) ASC')
     dados = cursor.fetchall()
     conn.close()
     return dados
@@ -347,6 +347,14 @@ def add_receita():
     conn.close()
     return redirect('/receitas')
 
+@app.route('/delete_insumo/<int:id>')
+def delete_insumo(id):
+    conn = sqlite3.connect('estoque.db')
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM estoque WHERE id=?', (id,))
+    conn.commit()
+    conn.close()
+    return redirect('/')
 
 @app.route('/delete_receita/<int:id>')
 def delete_receita(id):

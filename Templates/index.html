@@ -222,14 +222,18 @@
                     <th>C.Unit</th>
                     <th>C.Total</th>
                     <th>Data</th>
+                    <th>Del</th>
                 </tr>
-                {% for nome, quantidade, custo_unit, custo_total, data in produtos %}
+                {% for id, nome, quantidade, custo_unit, custo_total, data in produtos %}
                 <tr>
                     <td>{{ nome }}</td>
                     <td>{{ quantidade }}</td>
                     <td class="valor">R$ {{ '%.4f'|format(custo_unit) }}</td>
                     <td class="valor">R$ {{ '%.2f'|format(custo_total) }}</td>
                     <td style="text-align:center;">{{ data }}</td>
+                    <td style="text-align:center;">
+                        <a href="/delete_insumo/{{ id }}" onclick="return confirm('Apagar este registro?')">❌</a>
+                    </td>
                 </tr>
                 {% endfor %}
             </table>
